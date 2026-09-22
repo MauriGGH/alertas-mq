@@ -1,0 +1,16 @@
+{
+  "name": "alertas-mq",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "tunnel:up": "docker compose --profile tunnel up -d cloudflared",
+    "dev:server": "npm -w @alertas/server run dev",
+    "smoke": "npm -w @alertas/server run smoke",
+    "typecheck": "tsc -p apps/server --noEmit"
+  },
+  "engines": { "node": ">=20" }
+}
