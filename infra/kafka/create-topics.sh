@@ -23,6 +23,9 @@ create checkins           6  $((30*DAY))   # "Estoy bien" / "Necesito ayuda"
 create chat.global        3  $((7*DAY))
 create device.acks        6  $((7*DAY))    # recibido / enterado
 
+# Red sísmica comunitaria: 1 partición para que el detector vea todo en orden
+create sensor.triggers    1  $((1*DAY))
+
 # Pruebas de carga y errores
 create sim.flood         12  $((1*HOUR))   # eventos masivos del simulador
 create dead.letter        1  $((7*DAY))    # mensajes que no pasan validación

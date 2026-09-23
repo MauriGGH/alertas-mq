@@ -6,6 +6,7 @@ export const Topics = {
   CHECKINS: "checkins",
   CHAT: "chat.global",
   DEVICE_ACKS: "device.acks",
+  SENSOR_TRIGGERS: "sensor.triggers",
   SIM_FLOOD: "sim.flood",
   DEAD_LETTER: "dead.letter",
 } as const;

@@ -2,7 +2,10 @@
   "name": "alertas-mq",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
@@ -10,7 +13,12 @@
     "tunnel:up": "docker compose --profile tunnel up -d cloudflared",
     "dev:server": "npm -w @alertas/server run dev",
     "smoke": "npm -w @alertas/server run smoke",
-    "typecheck": "tsc -p apps/server --noEmit"
+    "typecheck": "tsc -p apps/server --noEmit",
+    "client": "npm -w @alertas/server run client --",
+    "alert": "npm -w @alertas/server run alert --",
+    "quake": "npm -w @alertas/server run quake --"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

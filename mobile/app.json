@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Red de Alertas",
+    "slug": "red-de-alertas",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "mx.practica.redalertas",
+      "infoPlist": {
+        "NSMotionUsageDescription": "El sensor sísmico usa el acelerómetro para detectar movimientos fuertes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "mx.practica.redalertas"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-audio",
+      "expo-asset"
+    ]
+  }
+}

@@ -6,11 +6,11 @@
 import { Kafka, logLevel, Partitioners } from "kafkajs";
 import { randomUUID } from "node:crypto";
 import { AlertEvent, Topics, encode, decode, alertPartitionKey } from "@alertas/shared";
-import { config } from "./config.js";
+import { env } from "./env.js";
 
 const RUN = randomUUID().slice(0, 8);
 const N = 5;
-const kafka = new Kafka({ clientId: `smoke-${RUN}`, brokers: config.kafkaBrokers, logLevel: logLevel.WARN });
+const kafka = new Kafka({ clientId: `smoke-${RUN}`, brokers: (env.KAFKA_BROKERS ?? "localhost:9092").split(","), logLevel: logLevel.WARN });
 
 const samples: AlertEvent[] = Array.from({ length: N }, (_, i) => ({
   v: 1,
@@ -24,6 +24,7 @@ const samples: AlertEvent[] = Array.from({ length: N }, (_, i) => ({
   targets: { estados: ["06"], municipios: ["06007", "06009"] },
   tags: ["#Colima", "#Manzanillo"],
   created_at: new Date().toISOString(),
+  drill: true,
 }));
 
 async function main() {

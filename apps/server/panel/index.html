@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Centro de mando · Alertas MQ</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚨</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+  <header class="trace">
+    <div class="trace-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>Centro de mando</h1>
+        <p id="conn-status" class="conn off">Sin conexión con el servidor</p>
+      </div>
+    </div>
+    <canvas id="seismo" aria-label="Flujo de mensajes entregados por segundo"></canvas>
+    <dl class="trace-read">
+      <div><dt>Entregas/s</dt><dd id="r-rate">0</dd></div>
+      <div><dt>En línea</dt><dd id="r-online">0</dd></div>
+      <div><dt>Latencia</dt><dd id="r-lat">–</dd></div>
+    </dl>
+  </header>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Secciones">
+      <button data-tab="control" class="active"><span>◉</span>Sala de control</button>
+      <button data-tab="emitir"><span>⚠</span>Emitir alerta</button>
+      <button data-tab="sismica"><span>〰</span>Red sísmica</button>
+      <button data-tab="dispositivos"><span>▣</span>Dispositivos</button>
+      <button data-tab="historial"><span>☰</span>Historial</button>
+      <button data-tab="chat"><span>✉</span>Chat global</button>
+      <button data-tab="bitacora"><span>≡</span>Bitácora</button>
+    </nav>
+
+    <main>
+      <!-- SALA DE CONTROL -->
+      <section id="tab-control" class="tab active">
+        <div class="stats">
+          <div class="stat"><b id="s-real">0</b><span>celulares reales conectados</span></div>
+          <div class="stat"><b id="s-sim">0</b><span>dispositivos simulados</span></div>
+          <div class="stat"><b id="s-alerts">0</b><span>alertas procesadas</span></div>
+          <div class="stat"><b id="s-deliv">0</b><span>entregas por WebSocket</span></div>
+          <div class="stat"><b id="s-acks">0</b><span>confirmaciones "Enterado"</span></div>
+          <div class="stat"><b id="s-sensor">0</b><span>disparos de sensores</span></div>
+        </div>
+        <div class="split">
+          <div class="panel map-panel"><div id="map-control" class="map"></div></div>
+          <div class="panel">
+            <h2>Últimos eventos</h2>
+            <ol id="feed-control" class="feed"></ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- EMITIR ALERTA -->
+      <section id="tab-emitir" class="tab">
+        <div class="presets" id="presets"></div>
+        <div class="split">
+          <form id="alert-form" class="panel form" autocomplete="off">
+            <div class="row2">
+              <label>Tipo
+                <select name="type">
+                  <option value="EARTHQUAKE">Sismo</option><option value="TSUNAMI">Tsunami</option>
+                  <option value="HURRICANE">Huracán</option><option value="STORM">Tormenta</option>
+                  <option value="FLOOD">Inundación</option><option value="VOLCANO">Volcán</option>
+                  <option value="WILDFIRE">Incendio forestal</option><option value="HEAT">Onda de calor</option>
+                  <option value="ZOMBIE">Zombies (ficticio)</option><option value="ALIEN">Invasión alienígena (ficticio)</option>
+                  <option value="OTHER">Otro</option>
+                </select>
+              </label>
+              <label>Severidad
+                <select name="severity">
+                  <option value="INFO">Informativa</option><option value="WATCH">Vigilancia</option>
+                  <option value="WARNING" selected>Alerta</option><option value="CRITICAL">Crítica: sirena y pantalla completa</option>
+                </select>
+              </label>
+            </div>
+            <label>Título<input name="title" required maxlength="120" placeholder="Huracán categoría 2 frente a Manzanillo" /></label>
+            <label>Mensaje<textarea name="body" rows="3" maxlength="2000" placeholder="Qué pasa y qué debe hacer la población"></textarea></label>
+            <div class="row2">
+              <label>Vigencia
+                <select name="expires">
+                  <option value="30">30 minutos</option><option value="120">2 horas</option>
+                  <option value="360" selected>6 horas</option><option value="1440">24 horas</option>
+                </select>
+              </label>
+              <label class="check"><input type="checkbox" name="drill" /> Es un simulacro</label>
+            </div>
+
+            <fieldset>
+              <legend>¿A quién le llega?</legend>
+              <div class="seg" role="radiogroup">
+                <label><input type="radio" name="scope" value="radio" checked /> Radio en el mapa</label>
+                <label><input type="radio" name="scope" value="estado" /> Estados completos</label>
+                <label><input type="radio" name="scope" value="municipios" /> Municipios</label>
+              </div>
+              <div data-scope="radio">
+                <p class="hint">Haz clic en el mapa para colocar el centro.</p>
+                <label class="range-label">Radio de la alerta: <output id="radius-out">80 km</output>
+                  <input type="range" name="radius" min="5" max="600" value="80" />
+                </label>
+              </div>
+              <div data-scope="estado" hidden>
+                <div id="estado-checks" class="checks"></div>
+              </div>
+              <div data-scope="municipios" hidden>
+                <div class="row2">
+                  <label>Estado<select id="mun-estado"></select></label>
+                  <label>Buscar<input id="mun-search" placeholder="Manzanillo" /></label>
+                </div>
+                <div id="mun-checks" class="checks tall"></div>
+                <p class="hint" id="mun-count">0 municipios seleccionados</p>
+              </div>
+            </fieldset>
+            <button class="primary" type="submit">Emitir alerta</button>
+          </form>
+          <div class="panel map-panel"><div id="map-emit" class="map"></div></div>
+        </div>
+      </section>
+
+      <!-- RED SÍSMICA -->
+      <section id="tab-sismica" class="tab">
+        <div class="split">
+          <form id="det-form" class="panel form">
+            <h2>Detector comunitario</h2>
+            <p class="hint">Declara sismo cuando varios celulares cercanos detectan movimiento brusco dentro de la misma ventana de tiempo.</p>
+            <label class="check"><input type="checkbox" name="enabled" /> Detector activo</label>
+            <div class="row2">
+              <label>Celulares necesarios<input type="number" name="minDevices" min="1" max="50" /></label>
+              <label>Ventana (s)<input type="number" name="windowSec" min="2" max="120" /></label>
+            </div>
+            <div class="row2">
+              <label>Distancia entre celulares (km)<input type="number" name="clusterRadiusKm" min="0.1" step="0.1" /></label>
+              <label>Radio de la alerta (km)<input type="number" name="alertRadiusKm" min="5" /></label>
+            </div>
+            <div class="row2">
+              <label>Espera entre detecciones (s)<input type="number" name="cooldownSec" min="0" /></label>
+              <label>Alcance
+                <select name="scope"><option value="radio">Solo la zona cercana</option><option value="nacional">Todo el país (demostración)</option></select>
+              </label>
+            </div>
+            <button class="primary" type="submit">Guardar ajustes</button>
+
+            <h2 class="gap">Simular sacudida</h2>
+            <div class="row2">
+              <label>Estado<select id="sim-estado"></select></label>
+              <label>Municipio<select id="sim-mun"></select></label>
+            </div>
+            <label>Celulares virtuales<input type="number" id="sim-n" value="3" min="1" max="50" /></label>
+            <button type="button" id="sim-go" class="danger">Simular sacudida</button>
+          </form>
+          <div class="panel">
+            <h2>Disparos en la ventana actual</h2>
+            <ol id="det-window" class="feed short"></ol>
+            <h2 class="gap">Detecciones</h2>
+            <ol id="det-list" class="feed short"></ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- DISPOSITIVOS -->
+      <section id="tab-dispositivos" class="tab">
+        <div class="panel">
+          <div class="toolbar">
+            <h2>Conectados ahora</h2>
+            <label class="check"><input type="checkbox" id="dev-hide-sim" checked /> Ocultar simulados</label>
+            <span id="dev-totals" class="hint"></span>
+          </div>
+          <div class="scroll"><table><thead><tr><th>Nombre</th><th>Plataforma</th><th>Zonas</th><th>Conectado desde</th><th>Transporte</th><th></th></tr></thead><tbody id="dev-body"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- HISTORIAL -->
+      <section id="tab-historial" class="tab">
+        <div class="panel">
+          <div class="toolbar"><h2>Alertas emitidas</h2><button id="hist-refresh" type="button">Actualizar</button></div>
+          <div class="scroll"><table><thead><tr><th>#</th><th>Severidad</th><th>Título</th><th>Origen</th><th>Municipios</th><th>Recibida</th><th>Enterado</th><th>Bien</th><th>Ayuda</th><th>Hora</th></tr></thead><tbody id="hist-body"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- CHAT -->
+      <section id="tab-chat" class="tab">
+        <div class="panel">
+          <div class="toolbar"><h2>Chat global</h2><input id="chat-tag" placeholder="Filtrar por #Manzanillo" /><button id="chat-refresh" type="button">Filtrar</button></div>
+          <ol id="chat-list" class="feed chat"></ol>
+        </div>
+      </section>
+
+      <!-- BITÁCORA -->
+      <section id="tab-bitacora" class="tab">
+        <div class="panel">
+          <div class="toolbar">
+            <h2>Bitácora</h2>
+            <select id="log-type">
+              <option value="">Todos los eventos</option>
+              <option value="alert.">Alertas</option><option value="device.">Dispositivos</option>
+              <option value="sensor.">Sensores</option><option value="seismic.">Detecciones sísmicas</option>
+              <option value="chat.">Chat</option><option value="ack">Confirmaciones</option><option value="admin">Acciones del panel</option>
+            </select>
+            <select id="log-level"><option value="">Cualquier nivel</option><option value="warn">Advertencias</option><option value="error">Errores</option></select>
+            <input id="log-q" placeholder="Buscar texto" />
+            <button id="log-pause" type="button">Pausar</button>
+          </div>
+          <ol id="log-list" class="feed log"></ol>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="token-dlg">
+    <form method="dialog" id="token-form">
+      <h2>Acceso al centro de mando</h2>
+      <p class="hint">Pega el valor de <code>ADMIN_TOKEN</code> de tu archivo <code>.env</code>. Se guarda solo en este navegador.</p>
+      <input id="token-input" required />
+      <button class="primary" type="submit">Entrar</button>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dlg">
+    <form method="dialog">
+      <h2 id="confirm-title">Emitir alerta crítica</h2>
+      <p id="confirm-text"></p>
+      <div class="row2"><button value="cancel">Cancelar</button><button value="ok" class="danger">Emitir ahora</button></div>
+    </form>
+  </dialog>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="/socket.io/socket.io.min.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
