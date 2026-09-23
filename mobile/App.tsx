@@ -93,5 +93,5 @@ const s = StyleSheet.create({
   tabIcon: { fontSize: 20 },
   tabLabel: { fontSize: 12, color: C.ink2, fontWeight: "600", marginTop: 2 },
   tabActive: { color: C.ink, fontWeight: "900" },
-  tabBar: { position: "absolute", top: 0, height: 3, width: "50%", backgroundColor: C.warning, borderRadius: 2 },
+  tabBar: { position: "absolute", top: 0, left: "25%", height: 3, width: "50%", backgroundColor: C.warning, borderRadius: 2 },
 });

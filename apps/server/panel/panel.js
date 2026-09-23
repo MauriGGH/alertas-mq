@@ -8,6 +8,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const hhmmss = (iso) => new Date(iso).toLocaleTimeString("es-MX", { hour12: false });
 const SEV_LABEL = { INFO: "Informativa", WATCH: "Vigilancia", WARNING: "Alerta", CRITICAL: "Crítica" };
 const SEV_COLOR = { INFO: "#3b9eff", WATCH: "#f2c230", WARNING: "#ff8a1f", CRITICAL: "#ff3b3b" };
+const SOURCE_LABEL = { MANUAL: "Centro de mando", CROWDSENSE: "Red de sensores", USGS: "USGS", NHC: "NHC", GDACS: "GDACS", SMN: "SMN", SIMULATOR: "Simulador" };
 const TYPE_LABEL = {
   EARTHQUAKE: "Sismo", TSUNAMI: "Tsunami", HURRICANE: "Huracán", STORM: "Tormenta", FLOOD: "Inundación",
   VOLCANO: "Volcán", WILDFIRE: "Incendio", HEAT: "Calor", ZOMBIE: "Zombies", ALIEN: "Alienígenas", OTHER: "Otro",
@@ -305,7 +306,7 @@ async function loadHistory() {
     $("#hist-body").innerHTML = rows.map((r) => `<tr>
       <td>${r.seq}</td>
       <td><span class="sev ${r.drill ? "DRILL" : r.severity}">${r.drill ? "Simulacro" : SEV_LABEL[r.severity]}</span></td>
-      <td>${esc(r.title)}</td><td>${esc(r.source)}</td><td>${r.municipios}</td>
+      <td>${esc(r.title)}</td><td>${esc(SOURCE_LABEL[r.source] ?? r.source)}</td><td>${r.municipios}</td>
       <td>${r.received}</td><td>${r.acknowledged}</td><td>${r.ok}</td><td>${r.help ? `<b style="color:var(--critical)">${r.help}</b>` : 0}</td>
       <td>${new Date(r.created_at).toLocaleString("es-MX", { hour12: false })}</td></tr>`).join("")
       || '<tr><td colspan="10" class="empty">Todavía no se ha emitido ninguna alerta. Usa "Emitir alerta".</td></tr>';
